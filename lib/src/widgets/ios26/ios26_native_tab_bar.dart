@@ -61,6 +61,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
   List<String>? _lastSelectedFileIcons;
   List<String>? _lastNetworkIcons;
   List<String>? _lastSelectedNetworkIcons;
+  List<bool>? _lastTemplateFlags;
   List<int?>? _lastBadgeCounts;
   List<String?>? _lastBadgeTexts;
   List<int?>? _lastBadgeColors;
@@ -174,6 +175,12 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
       .map((e) => _extractNetworkUrl(e.selectedIcon ?? e.icon))
       .toList();
 
+  /// Which destinations want their file or network icon drawn as a template
+  /// glyph rather than as an avatar. See
+  /// [AdaptiveNavigationDestination.iconIsTemplate].
+  List<bool> _mapTemplateFlags() =>
+      widget.destinations.map((e) => e.iconIsTemplate).toList();
+
   // Native badge styling: badge content + colors mapped to the
   // native side (UITabBarItem.badgeValue / .badgeColor / badge text attrs).
   List<String?> _mapBadgeTexts() =>
@@ -202,6 +209,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
       final selectedFileIcons = _mapSelectedFileIcons();
       final networkIcons = _mapNetworkIcons();
       final selectedNetworkIcons = _mapSelectedNetworkIcons();
+      final templateFlags = _mapTemplateFlags();
 
       final searchFlags = widget.destinations.map((e) => e.isSearch).toList();
       final badgeCounts = widget.destinations.map((e) => e.badgeCount).toList();
@@ -222,6 +230,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
         'selectedFileIcons': selectedFileIcons,
         'networkIcons': networkIcons,
         'selectedNetworkIcons': selectedNetworkIcons,
+        'templateFlags': templateFlags,
         'searchFlags': searchFlags,
         'badgeCounts': badgeCounts,
         'badgeTexts': badgeTexts,
@@ -376,6 +385,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
     final selectedFileIcons = _mapSelectedFileIcons();
     final networkIcons = _mapNetworkIcons();
     final selectedNetworkIcons = _mapSelectedNetworkIcons();
+    final templateFlags = _mapTemplateFlags();
     final searchFlags = widget.destinations.map((e) => e.isSearch).toList();
     final badgeCounts = widget.destinations.map((e) => e.badgeCount).toList();
 
@@ -388,7 +398,8 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
         _lastSelectedFileIcons?.join('|') != selectedFileIcons.join('|') ||
         _lastNetworkIcons?.join('|') != networkIcons.join('|') ||
         _lastSelectedNetworkIcons?.join('|') !=
-            selectedNetworkIcons.join('|')) {
+            selectedNetworkIcons.join('|') ||
+        _lastTemplateFlags?.join('|') != templateFlags.join('|')) {
       await ch.invokeMethod('setItems', {
         'labels': labels,
         'sfSymbols': symbols,
@@ -399,6 +410,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
         'selectedFileIcons': selectedFileIcons,
         'networkIcons': networkIcons,
         'selectedNetworkIcons': selectedNetworkIcons,
+        'templateFlags': templateFlags,
         'searchFlags': searchFlags,
         'badgeCounts': badgeCounts,
         'badgeTexts': _mapBadgeTexts(),
@@ -415,6 +427,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
       _lastSelectedFileIcons = selectedFileIcons;
       _lastNetworkIcons = networkIcons;
       _lastSelectedNetworkIcons = selectedNetworkIcons;
+      _lastTemplateFlags = templateFlags;
       _requestIntrinsicSize();
     }
 
@@ -483,6 +496,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
     _lastSelectedFileIcons = _mapSelectedFileIcons();
     _lastNetworkIcons = _mapNetworkIcons();
     _lastSelectedNetworkIcons = _mapSelectedNetworkIcons();
+    _lastTemplateFlags = _mapTemplateFlags();
     _lastBadgeCounts = widget.destinations.map((e) => e.badgeCount).toList();
     _lastBadgeTexts = _mapBadgeTexts();
     _lastBadgeColors = _mapBadgeColors();
@@ -522,6 +536,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
     final selectedFileIcons = _mapSelectedFileIcons();
     final networkIcons = _mapNetworkIcons();
     final selectedNetworkIcons = _mapSelectedNetworkIcons();
+    final templateFlags = _mapTemplateFlags();
     final searchFlags = widget.destinations.map((e) => e.isSearch).toList();
     final badgeCounts = widget.destinations.map((e) => e.badgeCount).toList();
 
@@ -536,6 +551,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
         'selectedFileIcons': selectedFileIcons,
         'networkIcons': networkIcons,
         'selectedNetworkIcons': selectedNetworkIcons,
+        'templateFlags': templateFlags,
         'searchFlags': searchFlags,
         'badgeCounts': badgeCounts,
         'badgeTexts': _mapBadgeTexts(),

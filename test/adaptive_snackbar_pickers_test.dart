@@ -4,6 +4,7 @@ import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 
 void main() {
   _badgeTextTests();
+  _templateIconTests();
   group('AdaptiveSnackBar', () {
     testWidgets('shows snackbar with message', (WidgetTester tester) async {
       await tester.pumpWidget(
@@ -666,4 +667,29 @@ void _badgeTextTests() {
       expect(find.byType(AdaptiveBadge), findsNWidgets(2));
     },
   );
+}
+
+void _templateIconTests() {
+  group('AdaptiveNavigationDestination.iconIsTemplate', () {
+    // Off by default: FileImage and NetworkImage icons have always been drawn
+    // as avatars, and that is still what a profile picture wants.
+    test('defaults to false', () {
+      const destination = AdaptiveNavigationDestination(
+        icon: Icons.home,
+        label: 'Home',
+      );
+
+      expect(destination.iconIsTemplate, isFalse);
+    });
+
+    test('is carried on the destination', () {
+      const destination = AdaptiveNavigationDestination(
+        icon: Icons.home,
+        label: 'Home',
+        iconIsTemplate: true,
+      );
+
+      expect(destination.iconIsTemplate, isTrue);
+    });
+  });
 }

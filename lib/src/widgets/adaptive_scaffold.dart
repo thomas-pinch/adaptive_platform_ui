@@ -24,6 +24,7 @@ class AdaptiveNavigationDestination {
     this.badgeColor,
     this.badgeTextColor,
     this.addSpacerAfter = false,
+    this.iconIsTemplate = false,
   });
 
   /// Icon to display.
@@ -48,6 +49,20 @@ class AdaptiveNavigationDestination {
   /// Whether this is a search tab (iOS 26+)
   /// Search tabs are visually separated and transform into a search field
   final bool isSearch;
+
+  /// Whether a runtime [icon] -- a `FileImage` or `NetworkImage` -- is a
+  /// monochrome glyph rather than a picture.
+  ///
+  /// Only the iOS 26+ native tab bar reads this, and only for those two image
+  /// types; an SF Symbol or a bundled asset is already drawn this way.
+  ///
+  /// Such an image is treated the way the bar treats a symbol: scaled to fit
+  /// and drawn as a template, so UIKit paints it with the bar's own selected
+  /// and unselected tints. The default, `false`, keeps the avatar treatment
+  /// those image types have always had -- cropped to a circle and drawn in
+  /// its own colours, which is what a profile picture wants and what a
+  /// navigation glyph does not.
+  final bool iconIsTemplate;
 
   /// Badge count to display on the tab (null means no badge)
   /// On iOS 26+: Uses native UITabBarItem.badgeValue

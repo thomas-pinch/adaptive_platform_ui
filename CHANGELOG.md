@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+* **NEW**: `iconIsTemplate` on `AdaptiveNavigationDestination`. A `FileImage` or `NetworkImage` icon is drawn the way the iOS 26+ native tab bar already draws a bundled asset or an SF Symbol: scaled to fit and rendered as a template, so UIKit paints it with the bar's selected and unselected tints. The default, `false`, keeps the existing avatar treatment -- cropped to a circle and drawn in its own colours. Set it for a downloaded monochrome glyph, which otherwise could neither follow the tint nor keep its corners
+* **FIX**: iOS 26 tab bar: a `FileImage` or `NetworkImage` icon passed in the platform view's creation parameters was ignored on the first build. The item state those icons resolve against was published after the items were built, so the icon only appeared on the following `setItems`
+
 ## [1.0.2]
 * **FIX**: iOS 26: the fixed toolbar's automatic back button is now a 44-point circle like the native one, instead of a 38-point rounded square, and sits level with the title. The page-owned toolbar's back button is circular too (@Anderzzon, #171)
 * **FIX**: iPhone Duo: in Split View, an app in the left pane now shows its controls and tab bar in a vertical bar on the left edge, as native apps do. It used to fall back to horizontal bars. The side now comes from the system's vertical bar edge (iOS 27.1) instead of the safe-area insets alone (@sergi-labhouse)

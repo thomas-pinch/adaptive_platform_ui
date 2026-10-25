@@ -33,6 +33,7 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
     private var currentSelectedFileIcons: [String] = []
     private var currentNetworkIcons: [String] = []
     private var currentSelectedNetworkIcons: [String] = []
+    private var currentTemplateFlags: [Bool] = []
     private var currentSearchFlags: [Bool] = []
     private var currentBadgeCounts: [Int?] = []
     private var currentBadgeTexts: [String?] = []
@@ -87,6 +88,7 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
         var selectedFileIcons: [String] = []
         var networkIcons: [String] = []
         var selectedNetworkIcons: [String] = []
+        var templateFlags: [Bool] = []
         var searchFlags: [Bool] = []
         var badgeCounts: [Int?] = []
         var badgeTexts: [String?] = []
@@ -112,6 +114,7 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
             fileIcons = (dict["fileIcons"] as? [String]) ?? []
             selectedFileIcons = (dict["selectedFileIcons"] as? [String]) ?? []
             networkIcons = (dict["networkIcons"] as? [String]) ?? []
+            templateFlags = (dict["templateFlags"] as? [Bool]) ?? []
             selectedNetworkIcons = (dict["selectedNetworkIcons"] as? [String]) ?? []
             searchFlags = (dict["searchFlags"] as? [Bool]) ?? []
             spacerFlags = (dict["spacerFlags"] as? [Bool]) ?? []
@@ -336,6 +339,12 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
             max(labels.count, symbols.count),
             max(max(assetIcons.count, fileIcons.count), networkIcons.count)
         )
+        self.currentFileIcons = fileIcons
+        self.currentSelectedFileIcons = selectedFileIcons
+        self.currentNetworkIcons = networkIcons
+        self.currentSelectedNetworkIcons = selectedNetworkIcons
+        self.currentTemplateFlags = templateFlags
+
         bar.items = buildItems(0..<count)
 
         // Note: spacerFlags are received but not yet implemented for UITabBar
@@ -361,10 +370,6 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
         self.currentSelectedSymbols = selectedSymbols
         self.currentAssetIcons = assetIcons
         self.currentSelectedAssetIcons = selectedAssetIcons
-        self.currentFileIcons = fileIcons
-        self.currentSelectedFileIcons = selectedFileIcons
-        self.currentNetworkIcons = networkIcons
-        self.currentSelectedNetworkIcons = selectedNetworkIcons
         self.currentSearchFlags = searchFlags
         self.currentBadgeCounts = badgeCounts
         self.currentBadgeTexts = badgeTexts
@@ -436,6 +441,7 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
             let selectedFileIcons = (args["selectedFileIcons"] as? [String]) ?? []
             let networkIcons = (args["networkIcons"] as? [String]) ?? []
             let selectedNetworkIcons = (args["selectedNetworkIcons"] as? [String]) ?? []
+            let templateFlags = (args["templateFlags"] as? [Bool]) ?? []
             let searchFlags = (args["searchFlags"] as? [Bool]) ?? []
             let selectedIndex = (args["selectedIndex"] as? NSNumber)?.intValue ?? 0
             var badgeCounts: [Int?] = []
@@ -455,6 +461,7 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
             self.currentSelectedFileIcons = selectedFileIcons
             self.currentNetworkIcons = networkIcons
             self.currentSelectedNetworkIcons = selectedNetworkIcons
+            self.currentTemplateFlags = templateFlags
             self.currentSearchFlags = searchFlags
             self.currentBadgeCounts = badgeCounts
             self.currentBadgeTexts = badgeTexts
@@ -864,6 +871,13 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
         return ""
     }
 
+    /// Whether this destination's file or network icon is a monochrome glyph
+    /// to be drawn like a symbol, rather than a picture to be drawn like an
+    /// avatar. Set from `AdaptiveNavigationDestination.iconIsTemplate`.
+    private func isTemplateIcon(for index: Int) -> Bool {
+        return index < currentTemplateFlags.count && currentTemplateFlags[index]
+    }
+
     private func hasRuntimeImage(for index: Int) -> Bool {
         return !runtimeFilePath(for: index, selected: false).isEmpty ||
             !runtimeNetworkURL(for: index, selected: false).isEmpty ||
@@ -875,13 +889,19 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
         return UIImage(systemName: "person.crop.circle")
     }
 
-    private func loadRuntimeImage(filePath: String, networkURL: String) -> UIImage? {
+    /// Shapes a runtime image for the bar: a glyph is scaled to fit, the way
+    /// a bundled asset is, while a picture keeps the circular avatar crop.
+    private func shapeRuntimeImage(_ image: UIImage, template: Bool) -> UIImage {
+        return template ? resizeImage(image: image) : avatarImage(from: image)
+    }
+
+    private func loadRuntimeImage(filePath: String, networkURL: String, template: Bool) -> UIImage? {
         if !filePath.isEmpty, let image = UIImage(contentsOfFile: filePath) {
-            return avatarImage(from: image)
+            return shapeRuntimeImage(image, template: template)
         }
 
         if !networkURL.isEmpty, let cached = imageCache.object(forKey: networkURL as NSString) {
-            return avatarImage(from: cached)
+            return shapeRuntimeImage(cached, template: template)
         }
 
         return nil
@@ -889,6 +909,7 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
 
     private func fetchNetworkImageIfNeeded(
         urlString: String,
+        template: Bool,
         completion: @escaping (UIImage?) -> Void
     ) {
         guard !urlString.isEmpty else {
@@ -897,7 +918,7 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
         }
 
         if let cached = imageCache.object(forKey: urlString as NSString) {
-            completion(avatarImage(from: cached))
+            completion(shapeRuntimeImage(cached, template: template))
             return
         }
 
@@ -915,41 +936,89 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
             }
 
             self.imageCache.setObject(image, forKey: urlString as NSString)
-            let avatar = self.avatarImage(from: image)
+            let shaped = self.shapeRuntimeImage(image, template: template)
             DispatchQueue.main.async {
-                completion(avatar)
+                completion(shaped)
             }
         }.resume()
+    }
+
+    /// How a runtime image is handed to UIKit.
+    ///
+    /// A picture is drawn `.alwaysOriginal`, keeping its own colours, which is
+    /// what an avatar wants. A glyph is drawn the way the asset and symbol
+    /// branches draw theirs: as a template, so UIKit paints it with the bar's
+    /// tint, with an explicit colour only where the unselected tint is set --
+    /// otherwise the system's own unselected colour applies.
+    private func runtimeImage(
+        _ image: UIImage?,
+        template: Bool,
+        selected: Bool
+    ) -> UIImage? {
+        guard template else { return image?.withRenderingMode(.alwaysOriginal) }
+
+        if !selected, let unselTint = self.tabBar?.unselectedItemTintColor {
+            return image?.withTintColor(unselTint, renderingMode: .alwaysOriginal)
+        }
+
+        return image?.withRenderingMode(.alwaysTemplate)
+    }
+
+    /// Stand-in while a glyph is still downloading.
+    ///
+    /// Not the avatar placeholder: a person silhouette reads as a broken
+    /// profile picture where a navigation glyph belongs. Leaving it nil shows
+    /// the destination's label alone until the real icon lands.
+    private func runtimePlaceholder(template: Bool) -> UIImage? {
+        return template ? nil : placeholderAvatarImage()
     }
 
     private func configureRuntimeImages(for item: UITabBarItem, index: Int) -> Bool {
         guard hasRuntimeImage(for: index) else { return false }
 
+        let template = isTemplateIcon(for: index)
         let unselectedFile = runtimeFilePath(for: index, selected: false)
         let selectedFile = runtimeFilePath(for: index, selected: true)
         let unselectedNetwork = runtimeNetworkURL(for: index, selected: false)
         let selectedNetwork = runtimeNetworkURL(for: index, selected: true)
 
-        let unselectedImage = loadRuntimeImage(filePath: unselectedFile, networkURL: unselectedNetwork)
-        let selectedImage = loadRuntimeImage(filePath: selectedFile, networkURL: selectedNetwork)
+        let unselectedImage = loadRuntimeImage(
+            filePath: unselectedFile,
+            networkURL: unselectedNetwork,
+            template: template
+        )
+        let selectedImage = loadRuntimeImage(
+            filePath: selectedFile,
+            networkURL: selectedNetwork,
+            template: template
+        )
 
-        item.image = (unselectedImage ?? placeholderAvatarImage())?.withRenderingMode(.alwaysOriginal)
-        item.selectedImage = (selectedImage ?? unselectedImage ?? placeholderAvatarImage())?.withRenderingMode(.alwaysOriginal)
+        let placeholder = runtimePlaceholder(template: template)
+        item.image = runtimeImage(
+            unselectedImage ?? placeholder,
+            template: template,
+            selected: false
+        )
+        item.selectedImage = runtimeImage(
+            selectedImage ?? unselectedImage ?? placeholder,
+            template: template,
+            selected: true
+        )
 
         if unselectedImage == nil && !unselectedNetwork.isEmpty {
-            fetchNetworkImageIfNeeded(urlString: unselectedNetwork) { [weak item] avatar in
-                guard let item = item, let avatar = avatar else { return }
-                item.image = avatar.withRenderingMode(.alwaysOriginal)
+            fetchNetworkImageIfNeeded(urlString: unselectedNetwork, template: template) { [weak self, weak item] fetched in
+                guard let self = self, let item = item, let fetched = fetched else { return }
+                item.image = self.runtimeImage(fetched, template: template, selected: false)
                 if selectedImage == nil && selectedNetwork.isEmpty && selectedFile.isEmpty {
-                    item.selectedImage = avatar.withRenderingMode(.alwaysOriginal)
+                    item.selectedImage = self.runtimeImage(fetched, template: template, selected: true)
                 }
             }
         }
 
         if selectedImage == nil && !selectedNetwork.isEmpty {
-            fetchNetworkImageIfNeeded(urlString: selectedNetwork) { [weak item] avatar in
-                guard let item = item, let avatar = avatar else { return }
-                item.selectedImage = avatar.withRenderingMode(.alwaysOriginal)
+            fetchNetworkImageIfNeeded(urlString: selectedNetwork, template: template) { [weak self, weak item] fetched in
+                guard let self = self, let item = item, let fetched = fetched else { return }
+                item.selectedImage = self.runtimeImage(fetched, template: template, selected: true)
             }
         }
 
