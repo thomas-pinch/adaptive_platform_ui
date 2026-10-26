@@ -22,6 +22,12 @@ class ToolbarChromeScope extends InheritedWidget {
   /// True while the host shows the page's controls (back button, actions) in
   /// the fixed vertical bar of iPhone Duo, on whichever edge the pose puts it
   /// (see `DuoPose`). Pages then keep only their title at the top.
+  /// Whether the iPhone Duo trailing bar is drawing the chrome, tab bar
+  /// included.
+  ///
+  /// Public so an app can tell the one arrangement where the tab bar is drawn
+  /// outside the page apart from every other one, where it sits in the page's
+  /// own subtree and ordinary compositing covers it.
   final bool hostsDuoControls;
 
   /// The nearest scope, or null when no host is installed and the page must

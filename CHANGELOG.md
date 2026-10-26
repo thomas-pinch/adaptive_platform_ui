@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+* **NEW**: `ToolbarChromeScope` is exported, so an app can read `hostsDuoControls` to tell whether the iPhone Duo trailing bar is drawing the chrome. Without it there is no way to distinguish the one arrangement where the tab bar lives outside the page subtree from every other one, where ordinary compositing covers it
 * **NEW**: `iconIsTemplate` on `AdaptiveNavigationDestination`. A `FileImage` or `NetworkImage` icon is drawn the way the iOS 26+ native tab bar already draws a bundled asset or an SF Symbol: scaled to fit and rendered as a template, so UIKit paints it with the bar's selected and unselected tints. The default, `false`, keeps the existing avatar treatment -- cropped to a circle and drawn in its own colours. Set it for a downloaded monochrome glyph, which otherwise could neither follow the tint nor keep its corners
 * **FIX**: iOS 26 tab bar: a `FileImage` or `NetworkImage` icon passed in the platform view's creation parameters was ignored on the first build. The item state those icons resolve against was published after the items were built, so the icon only appeared on the following `setItems`
 
